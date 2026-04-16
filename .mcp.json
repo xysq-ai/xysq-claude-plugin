@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "xysq": {
+      "url": "https://api.xysq.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer ${user_config.api_token}"
+      }
+    }
+  }
+}

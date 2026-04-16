@@ -1,0 +1,21 @@
+{
+  "name": "xysq",
+  "version": "1.0.0",
+  "description": "Consent-first persistent memory for AI agents",
+  "author": {
+    "name": "xysq",
+    "url": "https://xysq.ai"
+  },
+  "homepage": "https://xysq.ai",
+  "repository": "https://github.com/xysq-ai/xysq-claude-plugin",
+  "license": "MIT",
+  "keywords": ["memory", "agents", "knowledge", "consent"],
+  "mcpServers": "./.mcp.json",
+  "skills": "./skills/",
+  "userConfig": {
+    "api_token": {
+      "description": "Your xysq API key (get one at app.xysq.ai/connect)",
+      "sensitive": true
+    }
+  }
+}
