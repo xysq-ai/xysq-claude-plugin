@@ -8,26 +8,25 @@ Persistent memory for AI agents. Install this plugin to give Claude Code access 
 
 Sign in at [app.xysq.ai](https://app.xysq.ai/login) and click **Connect Agent** to generate an API key.
 
-### 2. Install the plugin
+### 2. Add the xysq marketplace
 
 In Claude Code, run:
 
 ```
-/plugin install xysq-ai/xysq-claude-plugin
-```
-
-Or add as a marketplace first:
-
-```
 /plugin marketplace add xysq-ai/xysq-claude-plugin
+```
+
+### 3. Install the plugin
+
+```
 /plugin install xysq
 ```
 
-### 3. Enter your API key
+### 4. Enter your API key
 
 Claude Code will prompt for your xysq API key. Paste the `xysq_...` key you generated. It's stored securely in your system keychain.
 
-### 4. Done
+### 5. Done
 
 Start a new session. The plugin auto-connects to xysq and loads the memory skill. Try:
 

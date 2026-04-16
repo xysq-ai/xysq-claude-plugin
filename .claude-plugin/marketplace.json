@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "name": "xysq-official",
+  "description": "Official xysq plugins for AI agents",
+  "plugins": [
+    {
+      "name": "xysq",
+      "source": ".",
+      "version": "1.0.0",
+      "description": "Consent-first persistent memory for AI agents"
+    }
+  ]
+}
