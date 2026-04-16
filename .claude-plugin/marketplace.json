@@ -1,7 +1,8 @@
 {
   "name": "xysq-official",
   "owner": {
-    "name": "xysq"
+    "name": "xysq",
+    "email": "hello@xysq.ai"
   },
   "metadata": {
     "description": "Official xysq plugins for AI agents"
@@ -9,8 +10,12 @@
   "plugins": [
     {
       "name": "xysq",
-      "source": ".",
-      "description": "Consent-first persistent memory for AI agents"
+      "source": {
+        "source": "url",
+        "url": "https://github.com/xysq-ai/xysq-claude-plugin.git"
+      },
+      "description": "Consent-first persistent memory for AI agents",
+      "version": "1.0.0"
     }
   ]
 }
