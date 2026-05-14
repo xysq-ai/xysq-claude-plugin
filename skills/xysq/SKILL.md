@@ -190,6 +190,71 @@ skill_sync()  # fetches the latest xysq skill and returns install_path + content
 # For Claude Code: write content to install_path using the Write tool
 ```
 
+---
+
+## Organise — folders + uploaded files
+
+The Organise tools let you save the user's documents (Markdown notes, PDFs, CSVs, images, JSON, plain text) into a folder tree the user can later browse at app.xysq.ai. Uploaded files are automatically extracted and indexed so their content surfaces through `memory_recall` and `memory_reflect` afterwards.
+
+**Use `organise_upload_file` when:** the user hands you a document, pastes a long note, or asks you to save a file — anything they'd recognise as "a file" rather than a quick fact.
+
+**Use `memory_retain` instead when:** the user is sharing a fact, decision, preference, or short note from the conversation. Memory is cheaper and more searchable for granular content.
+
+**Use `knowledge_add` instead when:** the user pastes a URL or asks you to bookmark a link.
+
+### organise_list_folders — see the folder tree
+```
+organise_list_folders(team_id=None)
+# Returns: { folders: [{ id, name, parent_id, path, is_system, chat_id }, ...] }
+```
+Call this before `organise_upload_file` if you need to pick the right destination folder. The vault root has `parent_id=None`; the system `/Chats/` folder has `is_system=true` and rejects direct uploads.
+
+### organise_get_folder — inspect one folder
+```
+organise_get_folder(folder_id, team_id=None)
+# Returns: { folder, children }  (children = subfolders, not files)
+```
+
+### organise_create_folder — make a new folder
+```
+organise_create_folder(name, parent_id=None, team_id=None)
+# Returns: { folder: { id, name, ... } }
+```
+Omit `parent_id` to create directly under the vault root. Names must be unique among siblings; duplicate returns `status="conflict"`. Cannot nest under the system `/Chats/` folder.
+
+### organise_rename_folder / organise_move_folder
+```
+organise_rename_folder(folder_id, name, team_id=None)
+organise_move_folder(folder_id, new_parent_id, team_id=None)
+```
+System folders (root, `/Chats/`) cannot be renamed or moved. Moving a folder into one of its own descendants returns `status="error"` (cycle).
+
+### organise_delete_folder — ⚠️ irreversible
+```
+organise_delete_folder(folder_id, forget_memories=False, team_id=None)
+# Returns: { deleted_assets: <int> }
+```
+Cascades: every subfolder + file under it is removed. Set `forget_memories=True` to also purge extracted facts from recall (default leaves memory content intact). **Confirm with the user before deleting any non-empty folder.**
+
+### organise_upload_file — save a document
+```
+organise_upload_file(
+  filename,         # e.g. "notes.md", "contract.pdf"
+  content_b64,      # standard base64 of the raw bytes (NOT a data: URL)
+  mime_type,        # "text/markdown" | "text/plain" | "application/pdf" |
+                    # "application/json" | "text/csv" | "image/png" | ...
+  folder_id=None,   # omit to upload to the vault root
+  team_id=None,
+)
+# Returns: { asset_id, filename, folder_id, mime_type, size_bytes, extraction_status }
+```
+
+**Encoding:**
+- TEXT (markdown, txt, json, csv): `base64(utf-8-encoded text)`.
+- BINARY (pdf, images): `base64(raw bytes)`.
+
+**Limits:** 10 MB per file; only the MIME types listed above are accepted. Filename collisions get a " (2)", " (3)", … suffix automatically — use the returned `filename` when echoing back to the user. After upload, `extraction_status` is `"processing"`; the file is immediately browsable in Organise but only enters recall once extraction completes. There is no folder-upload primitive — for a tree of files, walk the structure yourself with `organise_create_folder` + `organise_upload_file` calls.
+
 
 ## Consent and Privacy
 
@@ -217,7 +282,14 @@ skill_sync()  # fetches the latest xysq skill and returns install_path + content
 
 **User asks "what do you remember about X?":** Use `memory_recall(query="X", budget="mid")` and present the results. Do NOT use `memory_reflect` here — the user wants the raw list, not a synthesis.
 
+**File over 10 MB:** `organise_upload_file` returns `status="rejected"` with a size message — do not retry; tell the user and ask them to split or compress.
+
+**Unsupported file type:** `organise_upload_file` returns `status="rejected"` with the allow-list. Suggest the closest accepted format (e.g. for `.docx` → ask the user to export as PDF or paste the text and use Markdown).
+
+**User asks to upload a whole folder of files:** there is no folder-upload primitive — walk the structure yourself. Call `organise_create_folder` for each directory, then `organise_upload_file` for each file. Use the `folder_id` returned by `organise_create_folder` to nest the next level.
+
+**User says "save this note":** prefer `organise_upload_file` with `mime_type="text/markdown"` only if the content is long enough to be a document (multiple paragraphs, headings). For a single fact / decision / preference, use `memory_retain` instead.
+
 
 ---
 Manage your memory at app.xysq.ai · Learn more at xysq.ai
-
