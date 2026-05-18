@@ -17,7 +17,8 @@
       "title": "xysq API Key",
       "description": "Your xysq API key (get one at app.xysq.ai/connect)",
       "type": "string",
-      "sensitive": true
+      "sensitive": true,
+      "required": true
     }
   }
 }

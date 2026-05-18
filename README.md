@@ -1,5 +1,7 @@
 # xysq — Claude Code Plugin
 
+**The official Claude Code plugin from [xysq](https://xysq.ai).**
+
 Persistent memory for AI agents. Install this plugin to give Claude Code access to your xysq memory vault — remember decisions, preferences, and context across every session.
 
 ## Install

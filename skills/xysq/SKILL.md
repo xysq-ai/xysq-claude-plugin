@@ -1,38 +1,108 @@
 ---
 name: xysq
 description: >
-  Connects Claude Code to xysq persistent memory. Activate this skill
-  whenever the user asks to "remember", "recall", "forget", "what did I
-  say about", "save this", "store this", or references past decisions,
-  preferences, or project context. Also activate at the start of every
-  session to pull user context, and immediately after any correction,
-  decision, or stated preference to persist it.
-  Do NOT activate for general coding questions that have no personal
-  memory component. Do NOT activate for questions about xysq's own
-  codebase unless the user explicitly asks to store or recall something.
-trigger: always
+  xysq is the persistent memory substrate for AI agents. With this skill
+  active, Claude retains, recalls, and reasons over the user's decisions,
+  preferences, project context, and prior conversations across sessions —
+  so they never re-explain themselves.
+
+  TRIGGER when:
+  - User says "remember", "save", "note", "forget", "recall", "what did I
+    say about", "what do you know about me / X".
+  - User states a preference, makes a decision, corrects you, or shares a
+    fact about themselves, their project, tools, or team — even in passing.
+  - User mentions a project, codebase, person, or context by name Claude
+    should already know — recall first, ask second.
+  - First substantive message of any session — prime with memory_recall.
+  - Problem is under-specified but references user/project context Claude
+    lacks ("fix the auth bug", "draft a reply to my CEO") — recall once.
+  - User pastes a URL, document, or long note — use knowledge_add or
+    organise_upload_file, NOT memory_retain.
+
+  SKIP when:
+  - Pure greetings ("hi", "hey").
+  - One-off coding questions with no personal/project signal ("syntax for
+    async/await in Python").
+  - Questions about xysq's own product or codebase, unless the user asks
+    to store or recall something.
+
+  Default operating mode whenever xysq is connected. Invoke generously —
+  under-capturing costs the user more than over-capturing.
 ---
 
-## Overview
+## What changes when this skill is active
 
-This skill connects Claude Code to xysq — a consent-first persistent memory layer. Its purpose is to eliminate context re-explaining across sessions. Every correction you retain today is tokens saved tomorrow. Every recalled preference is a question you don't have to ask again.
+Every session without memory starts cold. The user re-explains their stack, restates their preferences, recaps last week's decisions. That re-explanation is the single largest waste in any AI workflow — measured in tokens, in time, and in the user's patience.
 
-## Session Start Protocol
+xysq is the substrate that ends that waste. The user has already consented to memory and given you the keys. Your job is to make that consent pay off: prime cold sessions with recall, recognize memory-worthy moments and retain them verbatim, and reason over prior context the way a colleague who has worked with this person for months would.
 
-Do NOT fire a generic session-start reflect. User profile context is pre-baked into the "About you" section of this skill when available — treat that as your working context for the entire session.
+Treat this skill as the default operating mode, not a tool you reach for occasionally. Memory is a substrate, not a feature.
 
-On the user's **first substantive message** (not greetings like "hi", "hey", "you there?"):
+## How a memory-augmented session works
 
-1. Call `memory_recall(query=<user's message, shaped as a lookup>, budget="low")` — pulls relevant memories and wiki entries in parallel. Use the results as task-specific context before answering.
+### On the user's first substantive message
+
+Not greetings — wait for the first real ask. Then:
+
+1. Call `memory_recall(query=<user's message, shaped as a lookup>, budget="high")` to pull relevant memories and wiki entries in parallel. Use the results as task-specific context before answering. Explicit user asks deserve the budget — quality over token-saving.
 2. Call `authenticate()` lazily, on your first write (`memory_retain`, `memory_delete`, `knowledge_add`) — not at session start.
 3. Call `memory_tags()` just before your first `memory_retain`, not at session start. Invalid tags are silently dropped, so fetch the taxonomy only when you're about to use it.
 
-Call `memory_reflect` ONLY when the user's question itself requires synthesis across memory — "what do I prefer about X", "summarise my stance on Y", "compare my past decisions on Z". Not as warmup.
+Skip recall for: pure greetings, pure code-only questions with no personal signal, or follow-ups where the prior turn's recall already covered the ground.
 
-Skip both recall and reflect for: pure greetings, pure code-only questions with no personal signal, or follow-ups where the prior turn's recall already covered the ground.
+When user profile context is pre-baked into an "About you" section of this skill, treat that as your working context for the entire session — no separate reflect needed to surface it.
 
+### Proactive recall — the second-biggest leverage point
 
-## Tool Reference
+Reactive recall (user says "remember when") is easy. Proactive recall is what separates a memory-augmented Claude from a stateless one: noticing that a problem is under-specified and that memory probably contains the missing constraint.
+
+**Recall proactively when both signals are present:**
+
+1. **The problem references entities the user expects you to know** — a project name, a person, "my X", "our Y", "the Z we discussed". These are linguistic tells that the user has already mentally loaded the context and assumes you have too.
+2. **The answer quality depends on personal/project specifics, not general knowledge.** "What's the syntax for async/await" → no recall. "How should I structure my async logic" → recall, because the right answer depends on the user's codebase, framework, and past decisions.
+
+**Example — proactive recall pays off:**
+
+> User: "help me fix the auth bug we hit yesterday"
+
+Both signals present: "the auth bug" expects prior knowledge, and the fix depends on the user's stack. Call `memory_recall(query="auth bug yesterday", budget="mid")` before asking what stack they're on.
+
+**Example — proactive recall is wasteful:**
+
+> User: "what's the difference between Python's `is` and `==`?"
+
+Neither signal present. General knowledge, no personal context. Answer directly.
+
+**Anti-trigger — don't fish.** Recall is NOT a substitute for asking a clarifying question. If recall returns nothing relevant for an ambiguous prompt, ask the user — don't recall again with a different query hoping something hits. Fishing burns tokens without producing answers.
+
+**Batch within a problem.** Recall once at the start of a problem, not repeatedly through the thread. If you already recalled in turn 1 of a 5-turn debug session, don't recall again on turn 3 unless the domain has shifted (coding → travel).
+
+**Budget rule:**
+- Explicit user ask ("what do you know about my project?") → `budget="high"`. The user is explicitly asking — pay for quality.
+- Proactive recall (under-specified problem) → `budget="mid"`. Good signal-to-noise without being expensive.
+- Reserve `budget="low"` only for follow-up recalls within an already-recalled thread.
+
+### Recognizing memory-worthy moments — the implicit triggers
+
+The user will rarely say "remember this." The high-leverage retains happen when you notice a memory-worthy moment in passing and capture it without being asked. Train yourself to recognize these patterns:
+
+| Moment in conversation | What to retain |
+|---|---|
+| User makes a decision ("we're going with Postgres over MongoDB because…") | The decision + the reasoning, significance="high", scope="project" |
+| User corrects your output ("no, I prefer integration tests over mocks") | The correction as a preference, significance="high", scope="permanent" |
+| User states a preference in passing ("I always use Tailwind for styling") | Preference, significance="normal", scope="permanent" |
+| User shares project context ("our deploy pipeline runs on Cloud Run") | Project fact, significance="normal", scope="project" |
+| User shares a fact about themselves ("I'm the only backend engineer on this team") | Personal fact, significance="normal", scope="permanent" |
+| User describes current task ("today I'm migrating from Firebase to Supabase") | Session context, significance="normal", scope="session" |
+| User mentions a tool, library, or service they use regularly | Stack fact, significance="normal", scope="project" or permanent |
+
+**Rule:** if in doubt, retain. Under-capturing costs the user more than over-capturing — every retained correction is a question they won't have to answer again next session.
+
+### Explicit save commands
+
+When the user says "remember this", "save that", "note this" — the save command is a **trigger, not the content**. Do NOT retain only the save command itself; retain the ENTIRE unsaved conversation so far. See the `memory_retain` reference below for the exact content format and `document_id` rules.
+
+## Tool reference
 
 ### memory_retain — store a memory
 
@@ -86,19 +156,24 @@ Assistant (2026-04-22T00:00:05Z): Explained distribution channel options.
 
 These store ZERO recoverable information. Non-conversation content (pasted doc / code / note): pass raw as-is, no formatting needed.
 
-**What to retain:**
+---
 
-| Event | significance | scope |
-|---|---|---|
-| User corrects your output | high | permanent |
-| User makes a decision | high | permanent |
-| User states a preference | normal | permanent |
-| User shares project context | normal | project |
-| User shares a fact about themselves | normal | permanent |
-| Current task / what user is doing right now | normal | session |
-| Transactional reply ("ok", "thanks") | — | skip |
+### memory_recall — retrieve raw facts to reason over yourself
+Use when you need source material to process yourself, not a pre-synthesised answer.
 
-**Rule:** if in doubt, retain. Under-capturing costs more than over-capturing.
+```
+memory_recall(
+  query,
+  budget="mid",         # "low" | "mid" | "high" — see "Budget rule" above
+  intent=None,          # "decision" | "preference" | "fact" | "context"
+  scope=None,           # "session" | "project" | "permanent"
+  domain=None,          # e.g. "tech", "health" — shorthand for tags=["domain:<value>"]
+  mood=None,            # e.g. "focused", "frustrated" — shorthand for tags=["mood:<value>"]
+  team_id=None,
+)
+```
+
+Do NOT call memory_recall then memory_reflect for the same question. Pick one.
 
 ---
 
@@ -116,24 +191,7 @@ memory_reflect(
 # Use answer directly — do NOT call memory_recall for the same question.
 ```
 
----
-
-### memory_recall — retrieve raw facts to reason over yourself
-Use when you need source material to process yourself, not a pre-synthesised answer.
-
-```
-memory_recall(
-  query,
-  budget="mid",         # "low" | "mid" | "high"
-  intent=None,          # "decision" | "preference" | "fact" | "context"
-  scope=None,           # "session" | "project" | "permanent"
-  domain=None,          # e.g. "tech", "health" — shorthand for tags=["domain:<value>"]
-  mood=None,            # e.g. "focused", "frustrated" — shorthand for tags=["mood:<value>"]
-  team_id=None,
-)
-```
-
-Do NOT call memory_recall then memory_reflect for the same question. Pick one.
+Call `memory_reflect` ONLY when the user's question itself requires synthesis across memory — "what do I prefer about X", "summarise my stance on Y", "compare my past decisions on Z". Not as warmup.
 
 ---
 
@@ -256,31 +314,28 @@ organise_upload_file(
 **Limits:** 10 MB per file; only the MIME types listed above are accepted. Filename collisions get a " (2)", " (3)", … suffix automatically — use the returned `filename` when echoing back to the user. After upload, `extraction_status` is `"processing"`; the file is immediately browsable in Organise but only enters recall once extraction completes. There is no folder-upload primitive — for a tree of files, walk the structure yourself with `organise_create_folder` + `organise_upload_file` calls.
 
 
-## Consent and Privacy
+## Consent and privacy
 
-- Never retain PII (names, emails, addresses, IDs) without explicit user instruction.
-- When the user asks you to retain something sensitive, add the `pii` or `confidential` tag.
-- The user controls all stored data at app.xysq.ai — they can review, edit, and delete at any time.
-- Do NOT retain things the user explicitly says are off the record.
+The user controls all stored data at app.xysq.ai and can review, edit, or delete at any time. Three rules:
+
+- **No PII without explicit instruction.** Names, emails, addresses, IDs — don't retain unless the user explicitly asks. When they do, tag with `pii` or `confidential`.
+- **Off the record means off the record.** If the user says "don't save that" or "this is off the record", do NOT call `memory_retain` for that exchange. If you already retained it, call `memory_delete` with the memory_id from the retain response.
+- **Team vault access is gated.** A 403 means you're not authorised for that team_id — fall back to the personal vault (omit team_id). Do NOT retry with the same team_id.
 
 
-## Edge Cases
+## Edge cases
 
 **Memory vault is empty (new user):** `memory_recall` returns few or no results. Proceed normally and start retaining from this session.
 
-**memory_recall returns nothing relevant:** Proceed with the user's question directly. Do NOT fall back to a generic `memory_reflect` — absence of recall hits means there's nothing useful in memory for this query.
+**memory_recall returns nothing relevant:** Proceed with the user's question directly. Do NOT fall back to a generic `memory_reflect` and do NOT recall again with a different query — absence of recall hits means there's nothing useful in memory for this query. Ask the user instead.
 
 **memory_reflect returns confidence="low":** Treat the answer as a best-effort guess. Tell the user if they ask why you seem unfamiliar with their context.
 
-**User says "don't save that":** Do NOT call `memory_retain` for that exchange. If you already retained it, call `memory_delete` with the memory_id from the retain response.
-
 **Tags are unknown:** Call `memory_tags()` just before retaining. Do NOT guess tag names — invalid tags are silently dropped without error.
-
-**Team vault access denied (403):** You are not authorised for that team_id. Fall back to the personal vault (omit team_id). Do NOT retry with the same team_id.
 
 **User pastes a URL or document:** Use `knowledge_add`, NOT `memory_retain`. Knowledge sources are indexed for structured recall; storing URLs as raw memory is wasteful.
 
-**User asks "what do you remember about X?":** Use `memory_recall(query="X", budget="mid")` and present the results. Do NOT use `memory_reflect` here — the user wants the raw list, not a synthesis.
+**User asks "what do you remember about X?":** Use `memory_recall(query="X", budget="high")` and present the results. Do NOT use `memory_reflect` here — the user wants the raw list, not a synthesis.
 
 **File over 10 MB:** `organise_upload_file` returns `status="rejected"` with a size message — do not retry; tell the user and ask them to split or compress.
 
