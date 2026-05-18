@@ -28,6 +28,25 @@ description: >
 
   Default operating mode whenever xysq is connected. Invoke generously —
   under-capturing costs the user more than over-capturing.
+allowed-tools:
+  - mcp__xysq__authenticate
+  - mcp__xysq__whoami
+  - mcp__xysq__memory_retain
+  - mcp__xysq__memory_recall
+  - mcp__xysq__memory_reflect
+  - mcp__xysq__memory_list
+  - mcp__xysq__memory_delete
+  - mcp__xysq__memory_tags
+  - mcp__xysq__knowledge_add
+  - mcp__xysq__knowledge_list
+  - mcp__xysq__list_teams
+  - mcp__xysq__organise_list_folders
+  - mcp__xysq__organise_get_folder
+  - mcp__xysq__organise_create_folder
+  - mcp__xysq__organise_rename_folder
+  - mcp__xysq__organise_move_folder
+  - mcp__xysq__organise_delete_folder
+  - mcp__xysq__organise_upload_file
 ---
 
 ## What changes when this skill is active
