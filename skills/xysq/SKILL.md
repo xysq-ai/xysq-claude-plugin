@@ -16,8 +16,9 @@ description: >
   - First substantive message of any session — prime with memory_recall.
   - Problem is under-specified but references user/project context Claude
     lacks ("fix the auth bug", "draft a reply to my CEO") — recall once.
-  - User pastes a URL, document, or long note — use knowledge_add or
-    organise_upload_file, NOT memory_retain.
+  - User pastes a URL, quote, code snippet, or chat transcript — use
+    memory_retain with source:knowledge + source_type:* tags. For binary
+    or long files (>10 KB), use organise_upload_file instead.
 
   SKIP when:
   - Pure greetings ("hi", "hey").
@@ -37,7 +38,6 @@ allowed-tools:
   - mcp__xysq__memory_list
   - mcp__xysq__memory_delete
   - mcp__xysq__memory_tags
-  - mcp__xysq__knowledge_add
   - mcp__xysq__knowledge_list
   - mcp__xysq__list_teams
   - mcp__xysq__organise_list_folders
@@ -64,7 +64,7 @@ Treat this skill as the default operating mode, not a tool you reach for occasio
 Not greetings — wait for the first real ask. Then:
 
 1. Call `memory_recall(query=<user's message, shaped as a lookup>, budget="high")` to pull relevant memories and wiki entries in parallel. Use the results as task-specific context before answering. Explicit user asks deserve the budget — quality over token-saving.
-2. Call `authenticate()` lazily, on your first write (`memory_retain`, `memory_delete`, `knowledge_add`) — not at session start.
+2. Call `authenticate()` lazily, on your first write (`memory_retain`, `memory_delete`) — not at session start.
 3. Call `memory_tags()` just before your first `memory_retain`, not at session start. Invalid tags are silently dropped, so fetch the taxonomy only when you're about to use it.
 
 Skip recall for: pure greetings, pure code-only questions with no personal signal, or follow-ups where the prior turn's recall already covered the ground.
@@ -214,23 +214,30 @@ Call `memory_reflect` ONLY when the user's question itself requires synthesis ac
 
 ---
 
-### knowledge_add — save an external source
-Use when the user pastes a link, document, code snippet, or chat transcript.
+### Saving external sources — use memory_retain with source tags
+When the user pastes a link, quote, code snippet, or chat transcript, save it
+via `memory_retain` with the `source:knowledge` tag plus a `source_type:*` tag:
 
 ```
-knowledge_add(
-  type,                # "link" | "quote" | "code" | "chat"
-  url=None,            # required for type="link"
-  content=None,        # required for type="quote" | "code" | "chat"
-  title=None,
-  confidence="medium", # "high" | "medium" | "low"
-  location=None,       # e.g. "p. 47", "src/auth.py:12-40"
-  session_context=None,# what the conversation was about
-  team_id=None,
+memory_retain(
+  content="...",                                       # the URL, the quoted text, the code, the transcript
+  tags=["source:knowledge", "source_type:link"],       # or quote / code / chat
+  metadata={"url": "...", "title": "..."},             # type-specific fields go in metadata
+  ...
 )
 ```
 
-Do NOT use memory_retain for URLs or pasted documents — use knowledge_add.
+Per source_type, put these in `metadata`:
+- `link`:  `{"url": "...", "title": "..."}`
+- `quote`: `{"title": "...", "location": "p. 47"}`
+- `code`:  `{"language": "python", "location": "src/auth.py:12-40"}`
+- `chat`:  `{"title": "..."}`
+
+There is no separate `knowledge_add` tool — sources are just memories with
+these tags. The xysq dashboard renders them as source cards in the Main view.
+
+For binary files or long documents (>10 KB), use `organise_upload_file`
+instead — it handles GCS storage and extraction.
 
 ---
 
@@ -277,7 +284,7 @@ The Organise tools let you save the user's documents (Markdown notes, PDFs, CSVs
 
 **Use `memory_retain` instead when:** the user is sharing a fact, decision, preference, or short note from the conversation. Memory is cheaper and more searchable for granular content.
 
-**Use `knowledge_add` instead when:** the user pastes a URL or asks you to bookmark a link.
+**Use `memory_retain` with `source:knowledge` + `source_type:link` tags when:** the user pastes a URL or asks you to bookmark a link (see "Saving external sources" above).
 
 ### organise_list_folders — see the folder tree
 ```
@@ -352,7 +359,7 @@ The user controls all stored data at app.xysq.ai and can review, edit, or delete
 
 **Tags are unknown:** Call `memory_tags()` just before retaining. Do NOT guess tag names — invalid tags are silently dropped without error.
 
-**User pastes a URL or document:** Use `knowledge_add`, NOT `memory_retain`. Knowledge sources are indexed for structured recall; storing URLs as raw memory is wasteful.
+**User pastes a URL or document:** Use `memory_retain` with `tags=["source:knowledge", "source_type:link"]` (or `quote`/`code`/`chat`) and put `url` / `title` / `location` in `metadata`. For binary or long files (>10 KB) use `organise_upload_file` instead. There is no separate `knowledge_add` tool.
 
 **User asks "what do you remember about X?":** Use `memory_recall(query="X", budget="high")` and present the results. Do NOT use `memory_reflect` here — the user wants the raw list, not a synthesis.
 
