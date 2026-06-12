@@ -22,6 +22,13 @@ In Claude Code, run:
 
 Claude Code opens a browser window to sign you in to xysq. Approve the connection — no API key to copy, no config to edit. The session is stored securely in your system keychain.
 
+During install you'll be asked for an **Organisation path**:
+
+- **Personal account** (gmail.com and other consumer domains): leave it empty.
+- **Organisation account** (business email): paste the value shown at [app.xysq.ai/connect-agent](https://app.xysq.ai/connect-agent) — it looks like `/org/<your-org-id>`. Organisation accounts connect only through their organisation's endpoint; the personal endpoint refuses them.
+
+To change it later, run `/plugin`, select **xysq**, and edit the setting.
+
 ### 3. Done
 
 Start a new session. Try:
@@ -60,13 +67,21 @@ claude mcp add xysq https://api.xysq.ai/mcp \
   --header "Authorization: Bearer YOUR_API_KEY"
 ```
 
-For team scope on API-key sessions, add `--header "X-Xysq-Teams: TEAM_UUID_1,TEAM_UUID_2"`. The UI **MCP sync** toggle applies only to OAuth sessions.
+Organisation accounts must use their org-scoped URL instead of `/mcp`:
+
+```bash
+claude mcp add xysq https://api.xysq.ai/mcp/org/YOUR_ORG_ID \
+  --transport http \
+  --header "Authorization: Bearer YOUR_API_KEY"
+```
+
+Team scope is managed in the xysq web UI (the **MCP sync** toggle per team), not via connection config.
 
 This path doesn't install the memory skill — use the plugin if you want it.
 
 ## Upgrading from v1.x
 
-v1.x prompted for an API key during install. v2.0 uses OAuth instead — there's nothing to paste, the browser flow handles auth.
+v1.x prompted for an API key during install. v2.0 uses OAuth instead — there's nothing to paste, the browser flow handles auth. v2.1 adds the **Organisation path** prompt (see Install above); organisation accounts should set it when re-enabling the plugin.
 
 If you have v1.x installed:
 
