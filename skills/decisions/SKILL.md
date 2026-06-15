@@ -45,6 +45,21 @@ Translate the user's phrase into both the query wording and the post-filter boun
 When a `memory_kind:*` tag keys this skill, pass it in `tags` to get the
 pre-classified slice; fall back to untagged semantic recall if it yields too little.
 
+## If reflect fails, fall back to recall
+`memory_reflect` can return a malformed or empty result - an `answer` that is
+empty, that is low `confidence` with no `citations`, or that contains raw model
+scaffolding (e.g. text with `<|channel|>`, `to=functions`, `<|call|>`, or other
+token markers instead of prose). Treat ANY of these as a failed reflect.
+When reflect fails: do NOT present its output and do NOT invent an answer.
+Re-run the same query with `memory_recall` (it returns raw facts reliably),
+then synthesize the result yourself following the output contract below.
+Recall is the dependable floor; reflect is an optimization on top of it.
+
+## Deduplicate before rendering
+Recall may return the same underlying fact as several near-identical chunks (the
+engine expands one memory into multiple entity-phrase variants). Collapse these to
+one item before rendering - never show the same fact twice.
+
 ## Clarify, don't re-query
 If recall is empty or low-confidence for an ambiguous prompt, ASK the user a
 clarifying question. Do not silently re-run recall with reworded queries hoping
@@ -76,4 +91,4 @@ Decisions (event store - last month):
 
 (Most recent first. The Postgres call is shown as superseded by the Kafka one.)
 
-<!-- version: 1 -->
+<!-- version: 2 -->
