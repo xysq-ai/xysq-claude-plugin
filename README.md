@@ -52,7 +52,15 @@ Toggling on or off takes effect on the next MCP tool call. See [Teams via MCP](h
 | Component | Purpose |
 |-----------|---------|
 | **MCP server config** | OAuth-authorised connection to `api.xysq.ai/mcp` as your xysq user |
-| **Memory skill** | Teaches Claude when and how to use xysq tools (retain, recall, reflect) |
+| **Memory skill (`xysq`)** | Teaches Claude when and how to use xysq tools (retain, recall, reflect) |
+| **Recall skills** | Five focused skills bundled from the xysq-skills library: `recap`, `decisions`, `actionables`, `blockers`, `prep` |
+
+Skills are sourced from the [xysq-skills](https://github.com/xysq-ai/xysq-skills) submodule (`.skills-src`). To regenerate `skills/` after updating the submodule, run:
+
+```bash
+git submodule update --remote .skills-src
+scripts/build-skills.sh
+```
 
 ## Manual setup (alternative — for CI / headless contexts)
 

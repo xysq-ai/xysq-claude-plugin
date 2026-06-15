@@ -1,0 +1,3 @@
+[submodule ".skills-src"]
+	path = .skills-src
+	url = https://github.com/xysq-ai/xysq-skills
