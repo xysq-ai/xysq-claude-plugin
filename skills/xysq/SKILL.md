@@ -1,16 +1,53 @@
 ---
 name: xysq
 description: >
-  Connects Claude Code to xysq persistent memory. Activate this skill
-  whenever the user asks to "remember", "recall", "forget", "what did I
-  say about", "save this", "store this", or references past decisions,
-  preferences, or project context. Also activate at the start of every
-  session to pull user context, and immediately after any correction,
-  decision, or stated preference to persist it.
-  Do NOT activate for general coding questions that have no personal
-  memory component. Do NOT activate for questions about xysq's own
-  codebase unless the user explicitly asks to store or recall something.
-trigger: always
+  xysq is the persistent memory substrate for AI agents. With this skill
+  active, Claude retains, recalls, and reasons over the user's decisions,
+  preferences, project context, and prior conversations across sessions,
+  so they never re-explain themselves.
+
+  TRIGGER when:
+  - User says "remember", "save", "note", "forget", "recall", "what did I
+    say about", "what do you know about me / X".
+  - User states a preference, makes a decision, corrects you, or shares a
+    fact about themselves, their project, tools, or team, even in passing.
+  - User mentions a project, codebase, person, or context by name Claude
+    should already know, recall first, ask second.
+  - First substantive message of any session, prime with memory_recall.
+  - Problem is under-specified but references user/project context Claude
+    lacks ("fix the auth bug", "draft a reply to my CEO"), recall once.
+  - User pastes a URL, quote, code snippet, or chat transcript, use
+    memory_retain with source:knowledge + source_type:* tags. For binary
+    or long files (>10 KB), use organise_upload_file instead.
+
+  SKIP when:
+  - Pure greetings ("hi", "hey").
+  - One-off coding questions with no personal/project signal ("syntax for
+    async/await in Python").
+  - Questions about xysq's own product or codebase, unless the user asks
+    to store or recall something.
+
+  Default operating mode whenever xysq is connected. Invoke generously,
+  under-capturing costs the user more than over-capturing.
+allowed-tools:
+  - mcp__xysq__authenticate
+  - mcp__xysq__whoami
+  - mcp__xysq__memory_retain
+  - mcp__xysq__memory_recall
+  - mcp__xysq__memory_reflect
+  - mcp__xysq__memory_list
+  - mcp__xysq__memory_delete
+  - mcp__xysq__memory_tags
+  - mcp__xysq__memory_get_document
+  - mcp__xysq__memory_get_chunk
+  - mcp__xysq__list_teams
+  - mcp__xysq__organise_list_folders
+  - mcp__xysq__organise_get_folder
+  - mcp__xysq__organise_create_folder
+  - mcp__xysq__organise_rename_folder
+  - mcp__xysq__organise_move_folder
+  - mcp__xysq__organise_delete_folder
+  - mcp__xysq__organise_upload_file
 ---
 
 ## Overview
