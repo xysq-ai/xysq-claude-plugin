@@ -17,8 +17,14 @@ not a time window.
 You are assembling context for an upcoming meeting or call. Pull broadly across
 the topic regardless of age; favor recent but keep essential background. Neutral.
 
-## How to recall
-Use `mcp__xysq__memory_recall` with `personal_only: true` by default.
+## How to gather (ranked search, by design)
+Prep is topic-scoped and age-agnostic: you want the most RELEVANT context about a
+topic regardless of when it was logged. That is exactly what ranked search is
+for, so prep leads with `vault_search`, NOT `vault_find`. (Don't force this
+through `vault_find` - a meeting brief isn't a "complete the tagged slice"
+question, it's a "what's most relevant to this topic" question.)
+
+Use `mcp__xysq__vault_search` with `personal_only: true` by default.
 
 - Scope: default to the user's personal vault (`personal_only: true`). If the
   request names a team, pass that team's `team_id` instead; if ambiguous and
@@ -33,37 +39,28 @@ Use `mcp__xysq__memory_recall` with `personal_only: true` by default.
 - If the topic names a person, also query with that person's name to surface
   relationship context, prior agreements, and open threads with them.
 
-<!-- SHARED RECALL RECIPE - embed into each recall skill -->
-
 ## Grounding discipline
-Answer ONLY from what recall returns. Write grounded, clean prose - a natural
+Answer ONLY from what search returns. Write grounded, clean prose - a natural
 summary, not a citation dump. Do NOT inline citations. When the vault has little
 on the topic, say so plainly ("I don't have much on X") rather than inventing
 detail. If the user asks where something came from, surface the underlying
-memories (recall already returns them).
+memories (the results carry `document_id`; `vault_get` expands one in full).
 
-## Time-window handling
-recall has NO server-side date filter. To honor "since yesterday / last
-week / this month":
-1. Put the relative phrase in the query text AND pass `query_timestamp` = today's
-   ISO date so it resolves relative to now.
-2. Over-fetch (raise `budget`) so the window's memories are surfaced.
-3. Post-filter the results: keep only those whose `occurred_at` falls inside
-   the target window.
-Translate the user's phrase into both the query wording and the post-filter bounds.
-
-## Tag-filtered recall
-When a `memory_kind:*` tag keys this skill, pass it in `tags` to get the
-pre-classified slice; fall back to untagged semantic recall if it yields too little.
+## Optional: complete a specific slice
+Prep is relevance-first, but if the user's topic has a clear structural angle
+("every decision on the Acme deal", "all the blockers for this project"), you can
+add one `vault_find(kind="decision"|"blocker", ...)` pass to guarantee that
+slice is complete, then fold it into the briefing. Default is just `vault_search`;
+reach for find only when completeness of a sub-slice clearly matters.
 
 ## Deduplicate before rendering
-Recall may return the same underlying fact as several near-identical chunks (the
-engine expands one memory into multiple entity-phrase variants). Collapse these to
-one item before rendering - never show the same fact twice.
+Search may return the same underlying fact as several near-identical chunks (the
+engine expands one memory into multiple entity-phrase variants). Collapse by
+`document_id` before rendering - never show the same fact twice.
 
 ## Clarify, don't re-query
-If recall is empty or low-confidence for an ambiguous prompt, ASK the user a
-clarifying question. Do not silently re-run recall with reworded queries hoping
+If search is empty or low-confidence for an ambiguous prompt, ASK the user a
+clarifying question. Do not silently re-run search with reworded queries hoping
 something hits.
 
 ## Output contract
@@ -75,7 +72,7 @@ Return a structured briefing with four sections:
 4. **Anything needing a decision** - items the user may need to resolve in this
    meeting, based on what is logged.
 
-Omit sections that have no recalled content. If the vault has nothing on the
+Omit sections that have no gathered content. If the vault has nothing on the
 topic, say "I don't have anything logged on <topic>. Want me to search a related
 term?"
 
@@ -97,4 +94,4 @@ No open growth items logged against Sam specifically.
 **Anything needing a decision**
 Confirm the growth slice of the Q3 roadmap if it was left open.
 
-<!-- version: 4 -->
+<!-- version: 5 -->

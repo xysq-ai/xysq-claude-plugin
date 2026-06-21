@@ -16,54 +16,41 @@ cannot proceed - waiting on someone or something external).
 You are surfacing the user's open, self-owned work: the tasks they still need to
 do. Forward-looking only; surface long-pending items prominently. Stay grounded.
 
-## How to recall
-Use `mcp__xysq__memory_recall` with `tags: ["memory_kind:action"]` and
-`personal_only: true` by default.
+## How to gather (find for coverage, search for the tail)
+"What's on my plate" is a completeness question - the user wants the WHOLE list,
+not the top-ranked few. Lead with `vault_find` for the complete tagged set and
+use `vault_search` to catch tasks the extractor never tagged.
 
-- Scope: default to the user's personal vault (`personal_only: true`). If the
-  request names a team, pass that team's `team_id` instead; if ambiguous and
-  permitted, omit `personal_only` to fan out across personal + recall-enabled
-  teams and label items by `source`.
-- Query: the user's stated topic or "open tasks and priorities".
-- Do NOT restrict by time window - actionables can be old. Pull broadly and
-  surface long-pending items prominently (oldest unresolved first in that group).
-- If the tag-filtered result is thin, fall back to untagged recall with a query
-  shaped around tasks and to-dos.
-- Raise `budget` to over-fetch since the user wants a complete picture of open
-  work, not just recent items.
-
-<!-- SHARED RECALL RECIPE - embed into each recall skill -->
+1. **COVER the tagged slice (complete).** `mcp__xysq__vault_find(kind="action")`.
+   - Do NOT pass a time window - actionables can be old, and a long-pending item
+     is exactly what the user wants surfaced. Page with `cursor` to the end
+     (`next_cursor` null) so the picture is complete.
+   - For a team, pass `team_id`; omit for the personal vault.
+2. **CATCH the untagged tail (ranked).** `mcp__xysq__vault_search` with a query
+   shaped around tasks and to-dos ("open tasks, need to, TODO, follow up on
+   <topic>"), `budget` raised to over-fetch. Tag coverage is partial on real
+   vaults, so this catches commitments phrased as plain statements that were
+   never stamped `memory_kind:action`. Load-bearing, not optional.
+3. **MERGE + dedup** by `document_id`, then drop anything with a done/completed
+   signal so only still-open work remains. Sort oldest-unresolved first within
+   the long-pending group.
 
 ## Grounding discipline
-Answer ONLY from what recall returns. Write grounded, clean prose - a natural
+Answer ONLY from what the vault returns. Write grounded, clean prose - a natural
 summary, not a citation dump. Do NOT inline citations. When the vault has little
 on the topic, say so plainly ("I don't have much on X") rather than inventing
 detail. If the user asks where something came from, surface the underlying
-memories (recall already returns them).
-
-## Time-window handling
-recall has NO server-side date filter. To honor "since yesterday / last
-week / this month":
-1. Put the relative phrase in the query text AND pass `query_timestamp` = today's
-   ISO date so it resolves relative to now.
-2. Over-fetch (raise `budget`) so the window's memories are surfaced.
-3. Post-filter the results: keep only those whose `occurred_at` falls inside
-   the target window.
-Translate the user's phrase into both the query wording and the post-filter bounds.
-
-## Tag-filtered recall
-When a `memory_kind:*` tag keys this skill, pass it in `tags` to get the
-pre-classified slice; fall back to untagged semantic recall if it yields too little.
+memories (the results carry `document_id`; `vault_get` expands one in full).
 
 ## Deduplicate before rendering
-Recall may return the same underlying fact as several near-identical chunks (the
-engine expands one memory into multiple entity-phrase variants). Collapse these to
-one item before rendering - never show the same fact twice.
+A single memory can come back as several near-identical chunks, and the same node
+can appear in both the find and the search set. Collapse by `document_id` before
+rendering - never show the same task twice.
 
 ## Clarify, don't re-query
-If recall is empty or low-confidence for an ambiguous prompt, ASK the user a
-clarifying question. Do not silently re-run recall with reworded queries hoping
-something hits.
+If both find and search come back empty or low-signal for an ambiguous prompt,
+ASK the user a clarifying question. Do not silently re-run with reworded queries
+hoping something hits.
 
 ## Output contract
 Return a prioritized list of open items. Group as:
@@ -91,4 +78,4 @@ Open actionables (long-pending first):
 These are tasks you own and can act on. For items stuck waiting on someone else,
 ask for blockers instead.
 
-<!-- version: 5 -->
+<!-- version: 6 -->

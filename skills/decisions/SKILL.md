@@ -18,53 +18,49 @@ choice and its stated rationale, nothing inferred. If a decision has no clear
 rationale in the facts, present it as "rationale unknown" rather than inventing
 one.
 
-## How to recall
-Use `mcp__xysq__memory_recall` with `tags: ["memory_kind:decision"]`,
-`types: ["observation"]`, and `personal_only: true` by default (so a superseded
-decision resolves to the current one).
+## How to gather (find for coverage, search for the tail)
+Decisions are a *complete-the-slice* question, so lead with `vault_find` (which
+enumerates every matching node, server-side and unranked) and use `vault_search`
+to catch decisions the extractor never tagged. Run both, merge, dedup.
 
-- Scope: default to the user's personal vault (`personal_only: true`). If the
-  request names a team, pass that team's `team_id` instead; if it's genuinely
-  ambiguous and permitted, omit `personal_only` to fan out across personal +
-  recall-enabled teams and label each item by its `source`.
-- Query: the user's stated topic or "decisions and choices" for the window.
-- Set `query_timestamp` to today's ISO date for relative windows; post-filter
-  by each row's `occurred_at` to stay inside the stated period.
-- If the tag-filtered result is thin, re-run untagged recall with the same query
-  and filter manually for decision-shaped content.
+1. **COVER the tagged slice (complete).** `mcp__xysq__vault_find(kind="decision")`.
+   - For a window ("last week", "last month"), pass `time_start` and `time_end`
+     as ISO bounds. This filters server-side and indexed - you do NOT over-fetch
+     and post-filter by hand anymore. Resolve the relative phrase to concrete
+     bounds (e.g. "last week" -> the Mon-Sun ISO range around today).
+   - Page with the `cursor` until `next_cursor` is null if the user wants the
+     full set; otherwise one page is usually enough.
+   - For a team, pass `team_id`; omit it for the personal vault.
+2. **CATCH the untagged tail (ranked).** `mcp__xysq__vault_search` with a
+   decision-shaped query ("decisions and choices about <topic>"), `budget` raised
+   for a window, and `query_timestamp` = today's ISO date. This surfaces
+   decision-like memories that were never stamped `memory_kind:decision` (tag
+   coverage is partial on real vaults, so this step is load-bearing, not
+   optional). Post-filter these search hits to the window by `occurred_at`.
+3. **MERGE + dedup** the two sets by `document_id`; a node from find and the same
+   node from search is one item. Then keep only decision-shaped content.
 
-<!-- SHARED RECALL RECIPE - embed into each recall skill -->
+For the current-position read (a superseded decision resolving to its latest
+form), you can additionally `vault_search(..., types=["observation"])` - the
+observation lane reconciles contradictions at synthesis time.
 
 ## Grounding discipline
-Answer ONLY from what recall returns. Write grounded, clean prose - a natural
+Answer ONLY from what the vault returns. Write grounded, clean prose - a natural
 summary, not a citation dump. Do NOT inline citations. When the vault has little
 on the topic, say so plainly ("I don't have much on X") rather than inventing
 detail. If the user asks where something came from, surface the underlying
-memories (recall already returns them).
-
-## Time-window handling
-recall has NO server-side date filter. To honor "since yesterday / last
-week / this month":
-1. Put the relative phrase in the query text AND pass `query_timestamp` = today's
-   ISO date so it resolves relative to now.
-2. Over-fetch (raise `budget`) so the window's memories are surfaced.
-3. Post-filter the results: keep only those whose `occurred_at` falls inside
-   the target window.
-Translate the user's phrase into both the query wording and the post-filter bounds.
-
-## Tag-filtered recall
-When a `memory_kind:*` tag keys this skill, pass it in `tags` to get the
-pre-classified slice; fall back to untagged semantic recall if it yields too little.
+memories (the results carry `document_id`; `vault_get` expands one in full).
 
 ## Deduplicate before rendering
-Recall may return the same underlying fact as several near-identical chunks (the
-engine expands one memory into multiple entity-phrase variants). Collapse these to
-one item before rendering - never show the same fact twice.
+A single memory can come back as several near-identical chunks (the engine
+expands one memory into multiple entity-phrase variants), and the same node can
+appear in both the find and the search set. Collapse by `document_id` before
+rendering - never show the same decision twice.
 
 ## Clarify, don't re-query
-If recall is empty or low-confidence for an ambiguous prompt, ASK the user a
-clarifying question. Do not silently re-run recall with reworded queries hoping
-something hits.
+If both find and search come back empty or low-signal for an ambiguous prompt,
+ASK the user a clarifying question. Do not silently re-run with reworded queries
+hoping something hits.
 
 ## Output contract
 Return an enumerated list, most-recent-first. For each item:
@@ -92,4 +88,4 @@ Decisions (event store - last month):
 
 (Most recent first. The Postgres call is shown as superseded by the Kafka one.)
 
-<!-- version: 4 -->
+<!-- version: 5 -->

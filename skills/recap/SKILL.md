@@ -15,50 +15,43 @@ the word "recap" is not used - the signal is a time-bounded progress narrative.
 You are a neutral narrator summarizing what happened in a period. Cover the
 ground evenly; do not over-weight any single thread. Stay grounded in the facts.
 
-## How to recall
-Use `mcp__xysq__memory_recall` with `personal_only: true` by default.
+## How to gather (find the window, search for the story)
+A recap is window-bounded, so use `vault_find`'s server-side time filter to pull
+the window completely, then use `vault_search` to add narrative color and catch
+anything untagged. Resolve the relative window ("this week", "yesterday") to
+concrete ISO `time_start`/`time_end` bounds first.
 
-- Scope: if the request names a team, pass that `team_id` instead of
-  `personal_only`; if ambiguous and permitted, omit `personal_only` to fan out
-  across personal + recall-enabled teams and label items by `source`.
-- Default query: the user's stated topic or "recent activity" for the window.
-- For "why" context, also recall with `tags: ["memory_kind:decision"]`.
-- For "what happened" detail, also recall with `tags: ["memory_kind:event"]`.
-- Set `query_timestamp` to today's ISO date and raise `budget` to over-fetch when
-  a relative window ("this week", "yesterday") is given, then post-filter by
-  each row's `occurred_at`.
+1. **COVER the window (complete, server-side).** `mcp__xysq__vault_find` scoped
+   to the window with `time_start`/`time_end`. Run it for the kinds that carry a
+   recap: `kind="event"` (what happened), `kind="decision"` (the why). This is
+   the indexed, complete in-window set - no over-fetch-and-post-filter by hand.
+   Page with `cursor` if the window is busy. For a team, pass `team_id`.
+2. **ADD the story (ranked).** `mcp__xysq__vault_search` with the user's topic
+   (or "recent activity") and `query_timestamp` = today's ISO date, `budget`
+   raised. This surfaces in-window memories that carry no `memory_kind` tag and
+   gives the narrative its texture. Post-filter these hits to the window by
+   `occurred_at`.
+3. **MERGE + dedup** by `document_id` before narrating.
 
-<!-- SHARED RECALL RECIPE - embed into each recall skill -->
+If the request names a team, pass that `team_id` to the tools; if ambiguous and
+permitted, run against personal + recall-enabled teams and label items by their
+`source`. Default to the personal vault.
 
 ## Grounding discipline
-Answer ONLY from what recall returns. Write grounded, clean prose - a natural
+Answer ONLY from what the vault returns. Write grounded, clean prose - a natural
 summary, not a citation dump. Do NOT inline citations. When the vault has little
 on the topic, say so plainly ("I don't have much on X") rather than inventing
 detail. If the user asks where something came from, surface the underlying
-memories (recall already returns them).
-
-## Time-window handling
-recall has NO server-side date filter. To honor "since yesterday / last
-week / this month":
-1. Put the relative phrase in the query text AND pass `query_timestamp` = today's
-   ISO date so it resolves relative to now.
-2. Over-fetch (raise `budget`) so the window's memories are surfaced.
-3. Post-filter the results: keep only those whose `occurred_at` falls inside
-   the target window.
-Translate the user's phrase into both the query wording and the post-filter bounds.
-
-## Tag-filtered recall
-When a `memory_kind:*` tag keys this skill, pass it in `tags` to get the
-pre-classified slice; fall back to untagged semantic recall if it yields too little.
+memories (the results carry `document_id`; `vault_get` expands one in full).
 
 ## Deduplicate before rendering
-Recall may return the same underlying fact as several near-identical chunks (the
-engine expands one memory into multiple entity-phrase variants). Collapse these to
-one item before rendering - never show the same fact twice.
+A single memory can come back as several near-identical chunks, and the same node
+can appear in both the find and the search set. Collapse by `document_id` before
+rendering - never show the same fact twice.
 
 ## Clarify, don't re-query
-If recall is empty or low-confidence for an ambiguous prompt, ASK the user a
-clarifying question. Do not silently re-run recall with reworded queries hoping
+If the window comes back empty or low-signal for an ambiguous prompt, ASK the
+user a clarifying question. Do not silently re-run with reworded queries hoping
 something hits.
 
 ## Output contract
@@ -92,4 +85,4 @@ scopes cleanly separated.
 Register port 5173 and 5176 in the Auth0 tenant so headless login can be tested
 without a workaround.
 
-<!-- version: 4 -->
+<!-- version: 5 -->
