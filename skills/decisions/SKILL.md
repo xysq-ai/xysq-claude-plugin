@@ -12,15 +12,26 @@ did I make", "what did we settle on", "what was agreed". Choose this over recap
 when the focus is specifically on choices and their rationale - not a general
 progress narrative.
 
-## How to recall
-Use `mcp__xysq__memory_reflect` with `tags: ["memory_kind:decision"]` and
-`personal_only: true`.
+## Mission
+You are surfacing decisions the user made. Be precise and literal: report the
+choice and its stated rationale, nothing inferred. If a decision has no clear
+rationale in the facts, present it as "rationale unknown" rather than inventing
+one.
 
+## How to recall
+Use `mcp__xysq__memory_recall` with `tags: ["memory_kind:decision"]`,
+`types: ["observation"]`, and `personal_only: true` by default (so a superseded
+decision resolves to the current one).
+
+- Scope: default to the user's personal vault (`personal_only: true`). If the
+  request names a team, pass that team's `team_id` instead; if it's genuinely
+  ambiguous and permitted, omit `personal_only` to fan out across personal +
+  recall-enabled teams and label each item by its `source`.
 - Query: the user's stated topic or "decisions and choices" for the window.
 - Set `query_timestamp` to today's ISO date for relative windows; post-filter
-  by `occurred_start` to stay inside the stated period.
-- If the tag-filtered result is thin, fall back to untagged reflect with the
-  same query and filter manually for decision-shaped content.
+  by each row's `occurred_at` to stay inside the stated period.
+- If the tag-filtered result is thin, re-run untagged recall with the same query
+  and filter manually for decision-shaped content.
 
 <!-- SHARED RECALL RECIPE - embed into each recall skill -->
 
@@ -32,28 +43,18 @@ detail. If the user asks where something came from, surface the underlying
 memories (recall already returns them).
 
 ## Time-window handling
-recall/reflect have NO server-side date filter. To honor "since yesterday / last
+recall has NO server-side date filter. To honor "since yesterday / last
 week / this month":
 1. Put the relative phrase in the query text AND pass `query_timestamp` = today's
    ISO date so it resolves relative to now.
 2. Over-fetch (raise `budget`) so the window's memories are surfaced.
-3. Post-filter the results: keep only those whose `occurred_at` (recall) or
-   citation `occurred_start` (reflect) falls inside the target window.
+3. Post-filter the results: keep only those whose `occurred_at` falls inside
+   the target window.
 Translate the user's phrase into both the query wording and the post-filter bounds.
 
 ## Tag-filtered recall
 When a `memory_kind:*` tag keys this skill, pass it in `tags` to get the
 pre-classified slice; fall back to untagged semantic recall if it yields too little.
-
-## If reflect fails, fall back to recall
-`memory_reflect` can return a malformed or empty result - an `answer` that is
-empty, that is low `confidence` with no `citations`, or that contains raw model
-scaffolding (e.g. text with `<|channel|>`, `to=functions`, `<|call|>`, or other
-token markers instead of prose). Treat ANY of these as a failed reflect.
-When reflect fails: do NOT present its output and do NOT invent an answer.
-Re-run the same query with `memory_recall` (it returns raw facts reliably),
-then synthesize the result yourself following the output contract below.
-Recall is the dependable floor; reflect is an optimization on top of it.
 
 ## Deduplicate before rendering
 Recall may return the same underlying fact as several near-identical chunks (the
@@ -91,4 +92,4 @@ Decisions (event store - last month):
 
 (Most recent first. The Postgres call is shown as superseded by the Kafka one.)
 
-<!-- version: 2 -->
+<!-- version: 4 -->

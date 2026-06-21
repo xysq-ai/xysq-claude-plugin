@@ -12,17 +12,25 @@ on", "what's waiting on someone", "what's stuck", "what's holding things up",
 (which lists all open work the user owns) specifically when the item is stuck
 waiting on an external dependency, person, or approval - not just unstarted.
 
-## How to recall
-Use `mcp__xysq__memory_reflect` with `tags: ["memory_kind:blocker"]` and
-`personal_only: true`.
+## Mission
+You are listing what is stuck. Be direct: for each item name exactly what or who
+it is waiting on. Lean skeptical, only call something a blocker if the facts
+show it cannot proceed, and drop anything the facts show was resolved.
 
+## How to recall
+Use `mcp__xysq__memory_recall` with `tags: ["memory_kind:blocker"]` and
+`personal_only: true` by default.
+
+- Scope: if the request names a team, pass that `team_id` instead of
+  `personal_only`; if ambiguous and permitted, omit `personal_only` to fan out
+  across personal + recall-enabled teams and label items by `source`.
 - Query: the user's stated topic or "blocked items waiting on external dependency".
-- Do NOT restrict by time window - a blocker may have been logged weeks ago and
+- Do NOT restrict by time window, a blocker may have been logged weeks ago and
   still be active.
 - If a recalled memory signals the blocker was resolved (e.g., a follow-up note
   says "unblocked", "approved", "done"), do NOT list it as active.
-- If the tag-filtered result is thin, fall back to untagged reflect with a query
-  shaped around "blocked", "waiting", "stuck", "on hold".
+- If the tag-filtered result is thin, re-run untagged recall with a query shaped
+  around stuck/waiting/on-hold wording.
 
 <!-- SHARED RECALL RECIPE - embed into each recall skill -->
 
@@ -34,28 +42,18 @@ detail. If the user asks where something came from, surface the underlying
 memories (recall already returns them).
 
 ## Time-window handling
-recall/reflect have NO server-side date filter. To honor "since yesterday / last
+recall has NO server-side date filter. To honor "since yesterday / last
 week / this month":
 1. Put the relative phrase in the query text AND pass `query_timestamp` = today's
    ISO date so it resolves relative to now.
 2. Over-fetch (raise `budget`) so the window's memories are surfaced.
-3. Post-filter the results: keep only those whose `occurred_at` (recall) or
-   citation `occurred_start` (reflect) falls inside the target window.
+3. Post-filter the results: keep only those whose `occurred_at` falls inside
+   the target window.
 Translate the user's phrase into both the query wording and the post-filter bounds.
 
 ## Tag-filtered recall
 When a `memory_kind:*` tag keys this skill, pass it in `tags` to get the
 pre-classified slice; fall back to untagged semantic recall if it yields too little.
-
-## If reflect fails, fall back to recall
-`memory_reflect` can return a malformed or empty result - an `answer` that is
-empty, that is low `confidence` with no `citations`, or that contains raw model
-scaffolding (e.g. text with `<|channel|>`, `to=functions`, `<|call|>`, or other
-token markers instead of prose). Treat ANY of these as a failed reflect.
-When reflect fails: do NOT present its output and do NOT invent an answer.
-Re-run the same query with `memory_recall` (it returns raw facts reliably),
-then synthesize the result yourself following the output contract below.
-Recall is the dependable floor; reflect is an optimization on top of it.
 
 ## Deduplicate before rendering
 Recall may return the same underlying fact as several near-identical chunks (the
@@ -90,4 +88,4 @@ Active blockers:
 Note: a memory shows the security review later approved the token change, so that
 blocker is resolved and is NOT listed above. Only still-blocked items appear here.
 
-<!-- version: 2 -->
+<!-- version: 4 -->

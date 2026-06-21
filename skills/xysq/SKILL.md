@@ -71,7 +71,7 @@ On the user's **first substantive message** (not greetings like "hi", "hey", "yo
 2. Call `authenticate()` lazily, on your first write (`memory_retain`, `memory_delete`, `organise_upload_file`) - not at session start.
 3. Call `memory_tags()` just before your first `memory_retain`, not at session start. Invalid tags are silently dropped, so fetch the taxonomy only when you're about to use it.
 
-Call `memory_reflect` ONLY when the user's question itself requires synthesis across memory - "what do I prefer about X", "summarise my stance on Y", "compare my past decisions on Z". Not as warmup.
+Call `memory_reflect` when a question needs facts gathered across memory and you will synthesize the answer - "what do I prefer about X", "summarise my stance on Y", "compare my past decisions on Z". It returns facts (plus a convenience digest), not a finished answer. Not as warmup.
 
 Skip both recall and reflect for: pure greetings, pure code-only questions with no personal signal, or follow-ups where the prior turn's recall already covered the ground.
 
@@ -186,8 +186,8 @@ The user will rarely say "remember this." The high-leverage retains happen when 
 
 ---
 
-### memory_reflect - ask a question, get a direct answer
-Use this when you want a synthesised, ready-to-use answer from memory. Contradictions are resolved at synthesis time (e.g. an older preference superseded by a newer one returns as a reconciled, temporally-aware answer).
+### memory_reflect - gather facts to synthesize
+Read the returned facts and synthesize the answer yourself; the answer field is a convenience digest of those facts. Contradictions are resolved among the returned observation facts (e.g. an older preference superseded by a newer one returns as a reconciled, temporally-aware fact).
 
 ```
 memory_reflect(
@@ -198,21 +198,21 @@ memory_reflect(
   team_id=None,
 )
 # Returns: {
-#   answer:     "...",                       # full synthesised response
+#   answer:     "...",                       # convenience digest of the facts
 #   confidence: "high" | "medium" | "low",
 #   citations:  [{id, type, context,
 #                 occurred_start, occurred_end}, ...],
 # }
 ```
 
-Use ``answer`` directly. For follow-up "where did you get that?" questions, pass a citation's ``id`` (or its document_id) to ``memory_get_document``.
+The ``answer`` field is a convenience digest of the returned facts. For follow-up "where did you get that?" questions, pass a citation's ``id`` (or its document_id) to ``memory_get_document``.
 
-Do NOT call memory_recall after memory_reflect for the same question - reflect already cites its sources.
+Do NOT call memory_recall after memory_reflect for the same question - both return facts; memory_reflect adds a digest plus observation-resolution, memory_recall gives raw history.
 
 ---
 
 ### memory_recall - retrieve raw facts to reason over yourself
-Use when you need source material to reason over yourself (e.g. history queries - "what did the user say about X"). For "what's true now / what does the user prefer" - call ``memory_reflect`` instead, or pass ``types=["observation"]`` to recall to get conflict-resolved facts.
+Use when you need source material to reason over yourself (e.g. history queries - "what did the user say about X"). For "what's true now / what does the user prefer" - call ``memory_reflect`` (it returns observation-resolved facts to synthesize), or pass ``types=["observation"]`` to recall directly.
 
 ```
 memory_recall(
@@ -236,7 +236,7 @@ Do NOT call memory_recall then memory_reflect for the same question. Pick one.
 ---
 
 ### memory_get_document - fetch a stored document by id
-Use after ``memory_reflect`` returns citations and the user asks for the source. Returns the document's ``original_text`` + tags + metadata.
+Use after ``memory_reflect`` returns citations (each carries a document_id) and the user asks for the source. Returns the document's ``original_text`` + tags + metadata.
 
 ```
 memory_get_document(document_id, team_id=None)
@@ -395,7 +395,7 @@ organise_upload_file(
 
 **User pastes a URL, quote, code snippet, or chat transcript:** Use `memory_retain` with `tags=["source:knowledge", "source_type:link"]` (or `quote`/`code`/`chat`) and put `url` / `title` / `location` in `metadata`. For binary or long files (>10 KB), use `organise_upload_file` - those land as memories with `kind=asset`.
 
-**User asks "what do you remember about X?":** Use `memory_recall(query="X", budget="mid")` and present the results. Do NOT use `memory_reflect` here - the user wants the raw list, not a synthesis.
+**User asks "what do you remember about X?":** Use `memory_recall(query="X", budget="mid")` and present the results. Either tool returns facts; recall is the direct path for a raw list.
 
 **File over 10 MB:** `organise_upload_file` returns `status="rejected"` with a size message - do not retry; tell the user and ask them to split or compress.
 

@@ -12,10 +12,18 @@ items", "my priorities", "what should I work on next", "what's on my plate".
 Choose this over recap (past narrative) and over blockers (which is items that
 cannot proceed - waiting on someone or something external).
 
+## Mission
+You are surfacing the user's open, self-owned work: the tasks they still need to
+do. Forward-looking only; surface long-pending items prominently. Stay grounded.
+
 ## How to recall
 Use `mcp__xysq__memory_recall` with `tags: ["memory_kind:action"]` and
-`personal_only: true`.
+`personal_only: true` by default.
 
+- Scope: default to the user's personal vault (`personal_only: true`). If the
+  request names a team, pass that team's `team_id` instead; if ambiguous and
+  permitted, omit `personal_only` to fan out across personal + recall-enabled
+  teams and label items by `source`.
 - Query: the user's stated topic or "open tasks and priorities".
 - Do NOT restrict by time window - actionables can be old. Pull broadly and
   surface long-pending items prominently (oldest unresolved first in that group).
@@ -34,28 +42,18 @@ detail. If the user asks where something came from, surface the underlying
 memories (recall already returns them).
 
 ## Time-window handling
-recall/reflect have NO server-side date filter. To honor "since yesterday / last
+recall has NO server-side date filter. To honor "since yesterday / last
 week / this month":
 1. Put the relative phrase in the query text AND pass `query_timestamp` = today's
    ISO date so it resolves relative to now.
 2. Over-fetch (raise `budget`) so the window's memories are surfaced.
-3. Post-filter the results: keep only those whose `occurred_at` (recall) or
-   citation `occurred_start` (reflect) falls inside the target window.
+3. Post-filter the results: keep only those whose `occurred_at` falls inside
+   the target window.
 Translate the user's phrase into both the query wording and the post-filter bounds.
 
 ## Tag-filtered recall
 When a `memory_kind:*` tag keys this skill, pass it in `tags` to get the
 pre-classified slice; fall back to untagged semantic recall if it yields too little.
-
-## If reflect fails, fall back to recall
-`memory_reflect` can return a malformed or empty result - an `answer` that is
-empty, that is low `confidence` with no `citations`, or that contains raw model
-scaffolding (e.g. text with `<|channel|>`, `to=functions`, `<|call|>`, or other
-token markers instead of prose). Treat ANY of these as a failed reflect.
-When reflect fails: do NOT present its output and do NOT invent an answer.
-Re-run the same query with `memory_recall` (it returns raw facts reliably),
-then synthesize the result yourself following the output contract below.
-Recall is the dependable floor; reflect is an optimization on top of it.
 
 ## Deduplicate before rendering
 Recall may return the same underlying fact as several near-identical chunks (the
@@ -93,4 +91,4 @@ Open actionables (long-pending first):
 These are tasks you own and can act on. For items stuck waiting on someone else,
 ask for blockers instead.
 
-<!-- version: 2 -->
+<!-- version: 5 -->
