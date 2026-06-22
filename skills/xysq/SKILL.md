@@ -251,6 +251,18 @@ memory_get_chunk(chunk_id)
 
 ---
 
+### vault tools - the newer retrieval surface (vault_search / vault_get / vault_find)
+
+xysq added three "vault" tools. Two are just new front-door names; one is a new capability. The old names keep working, so nothing here breaks existing usage.
+
+- `vault_search(query, budget, tags, ...)` - ranked, fuzzy retrieval. The new name for `memory_recall` (same behaviour, same args). "Find memories ABOUT X."
+- `vault_get(document_id)` - pull one node in full. The new name for `memory_get_document`.
+- `vault_find(entity|source|tags|kind|document_id, time_start, time_end, cursor)` - NEW. Deterministic, COMPLETE, unranked enumeration: "give me EVERY node matching this filter," keyset-paged. Use it when completeness matters more than ranking (e.g. every decision in a window, every blocker, every memory tagged X). At least one selective filter is required; a bare scan is rejected. `next_cursor=null` means the filtered set is exhausted. This is the one thing recall cannot do (recall ranks and drops low-scoring hits); vault_find drops nothing for a filter.
+
+Rule of thumb: vault_search to discover, vault_find to cover, vault_get to read one node deep.
+
+**Updating an existing document:** `memory_retain` accepts `update_mode="replace"` (default `"append"`). Pass `update_mode="replace"` with an existing `document_id` to OVERWRITE that document's content instead of appending - useful when you are re-writing the same logical document (e.g. re-saving an evolving session summary) so it stays current instead of accumulating stale copies.
+
 ### Saving external sources - use memory_retain with source tags
 
 When the user pastes a link, quote, code snippet, or chat transcript, save

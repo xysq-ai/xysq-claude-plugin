@@ -15,7 +15,7 @@
         "url": "https://github.com/xysq-ai/xysq-claude-plugin.git"
       },
       "description": "Consent-first persistent memory for AI agents",
-      "version": "2.5.0"
+      "version": "2.6.0"
     }
   ]
 }
