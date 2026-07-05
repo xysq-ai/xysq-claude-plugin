@@ -46,7 +46,13 @@ one tight line, dense but complete (keep the WHY, the WHO, the exact value).
 5. **Corrections & preferences** - anything the user corrected you on or stated
    as a preference/instruction. Keep these close to verbatim, they are the
    highest-value, lowest-token memories. `memory_kind:decision` (high
-   significance) or a `preference` framing.
+   significance) or a `preference` framing. This includes how the user wants
+   you to WORK: their approval cadence and autonomy preferences (e.g. "stop
+   asking me to approve every step, act on my past decisions"), not just
+   corrections to your output. These operating preferences are the
+   highest-value memories for a future autonomous session; capture them
+   verbatim. (The next session's /xysq skill recalls them so you start
+   calibrated, not defaulting to maximum interruption.)
 6. **Condensation catch-all** - anything important that doesn't fit a bucket
    above (context, partial progress, what was tried, what's in flight). Condense
    it to the fewest words that keep every concrete claim. This is the safety net
@@ -135,6 +141,9 @@ User: "wrap up and save this session"
 > Blockers: notify-svc receipt template is hardcoded, waiting on design.
 > Open tasks: implement the idempotency key; add the backoff to payments-svc.
 > Corrections: user prefers POST .../delete over DELETE routes (API convention).
+> Preferences: user wants me to act on prior decisions without re-asking (stop
+> the yes/yes/yes approval loop), only pausing on genuinely new or irreversible
+> calls.
 
 (You retain that with significance=high, scope=project, a session document_id,
 memory_kind tags, then confirm:)
@@ -143,4 +152,4 @@ memory_kind tags, then confirm:)
 2 open tasks, 1 preference. Run wrap-up again later and it'll update this same
 memory instead of making a new one."
 
-<!-- version: 1 -->
+<!-- version: 2 -->
