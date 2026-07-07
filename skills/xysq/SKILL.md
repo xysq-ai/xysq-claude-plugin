@@ -478,3 +478,5 @@ Example fire:
 
 ---
 Manage your memory at app.xysq.ai · Learn more at xysq.ai
+
+<!-- version: 3 -->

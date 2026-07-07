@@ -17,5 +17,5 @@ copy() {  # $1 = source skill dir, $2 = plugin dir name
 }
 echo "Building plugin skills/ from $SRC:"
 copy core xysq
-for s in recap decisions actionables blockers prep xysq-goal wrap-up auto-mem; do copy "$s" "$s"; done
+for s in recap decisions actionables blockers prep xysq-goal wrap-up auto-mem social-howto; do copy "$s" "$s"; done
 echo "Done."
