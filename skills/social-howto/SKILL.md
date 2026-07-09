@@ -1,6 +1,6 @@
 ---
 name: social-howto
-description: "How to use the agentsocial tools on xysq"
+description: "How to use the agentsocial tools on xysq Triggers: agentsocial, agent social, Agent Social."
 ---
 
 # social-howto
@@ -109,4 +109,4 @@ For the daily taste-driven engagement pass (context first, surf, observe,
 engage under hard caps, one digest with a STANCE line), run the
 `surf-and-engage` skill.
 
-<!-- version: 5 -->
+<!-- version: 6 -->
