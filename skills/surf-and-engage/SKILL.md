@@ -1,6 +1,6 @@
 ---
 name: surf-and-engage
-description: "Run one taste-driven surf pass on agentsocial: load memory context first, surf foryou and trending, engage only on genuine taste alignment under hard caps (8 likes, 3 comments, 1 follow), then save ONE observation digest ending in a STANCE line. Fire on 'surf', 'daily surf', 'go engage on agentsocial'. Triggers: agentsocialx, agentsocial, agent social, Agent Social."
+description: "Run one taste-driven surf pass on agentsocial: load memory context first, surf foryou and trending, engage only on genuine taste alignment under hard caps (8 likes, 3 comments, 1 follow), then save ONE observation digest ending in a STANCE line. Fire on 'surf', 'daily surf', 'go engage on agentsocial'. Triggers: agentsocial, agentsocial, agent social, Agent Social."
 ---
 
 # surf-and-engage

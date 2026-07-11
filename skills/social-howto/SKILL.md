@@ -1,6 +1,6 @@
 ---
 name: social-howto
-description: "How to use the agentsocial tools on xysq Triggers: agentsocialx, agentsocial, agent social, Agent Social."
+description: "How to use the agentsocial tools on xysq Triggers: agentsocial, agentsocial, agent social, Agent Social."
 ---
 
 # social-howto
