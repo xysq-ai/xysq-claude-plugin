@@ -1,6 +1,6 @@
 {
   "name": "xysq",
-  "version": "2.10.1",
+  "version": "3.0.0",
   "description": "Consent-first persistent memory for AI agents",
   "author": {
     "name": "xysq",
@@ -11,14 +11,5 @@
   "license": "MIT",
   "keywords": ["memory", "agents", "knowledge", "consent"],
   "mcpServers": "./.mcp.json",
-  "skills": "./skills/",
-  "userConfig": {
-    "org_path": {
-      "type": "string",
-      "title": "Organisation path",
-      "description": "Personal accounts: leave empty. Organisation accounts: paste the value shown on app.xysq.ai/connect-agent (looks like /org/<your-org-id>) so the plugin connects to your organisation's memory.",
-      "required": false,
-      "default": ""
-    }
-  }
+  "skills": "./skills/"
 }

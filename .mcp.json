@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "xysq": {
-      "url": "https://api.xysq.ai/mcp${user_config.org_path}"
+      "url": "https://api.xysq.ai/mcp"
     }
   }
 }
